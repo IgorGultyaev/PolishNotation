@@ -1,55 +1,104 @@
 package com.company;
 
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.Stack;
 
 public class Main {
 
-    public static boolean isNum(String numStr) {
-        try {
-            Integer.parseInt(numStr);
-            return true;
-        } catch (Exception R) {
-            return false;
-        }
-    }
-
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Введите математическую формулу:");
+        System.out.println("Введите математическую формулу (например 2+7*(8+2*(10-5)+3*(8+2)+1)):");
         String input = scanner.nextLine();
         StringBuilder converter = new StringBuilder(input);
 
-        Stack<String> sign = new Stack<>();
-        Stack<Integer> numbers = new Stack<Integer>();
-        Stack<Wagon> train = new Stack<>();
+        Stack<Wagon> stack = new Stack<>();
+        Queue<Wagon> polishNotation = new LinkedList<>();
+        Queue<Wagon> train = new LinkedList<>();
 
         StringBuilder meaning = new StringBuilder();
         boolean mark = false;
 
         for (int meaningPos = 0; meaningPos < converter.length(); meaningPos++) {
+            String symbol = converter.substring(meaningPos,meaningPos+1);
 
-          if (isNum(converter.substring(meaningPos,meaningPos+1))) {
-              mark = true;
-              meaning = meaning.append(converter.charAt(meaningPos));
-            } else {
+          if (symbol.equals("+") || symbol.equals("-") || symbol.equals("*")
+                  ||  symbol.equals("/") || symbol.equals(")") || symbol.equals("(")) {
               if (mark) {
-
-                  numbers.push(Integer.parseInt(meaning.toString()));
-                  train.push(new Wagon(meaning.toString(), true));
+                  train.add(new Wagon(meaning.toString(),0));
                   meaning.delete(0,meaning.length());
                   mark = false;
               }
-              sign.push(converter.substring(meaningPos,meaningPos+1));
-              train.push(new Wagon(converter.substring(meaningPos,meaningPos+1), false));
+              int priority = 0;
+              String singWagon = converter.substring(meaningPos,meaningPos+1);
+              if ((singWagon.equals("*")) || (singWagon.equals("/"))) {
+                  priority = 3;
+              } else if ((singWagon.equals("+")) || (singWagon.equals("-"))){
+                  priority = 2;
+              } else if (singWagon.equals("(")){
+                  priority = 1;
+              } else if (singWagon.equals(")")){
+                  priority = 4;
+              } else System.out.println(singWagon+ " неверный оператор ошибка");
+              train.add(new Wagon(singWagon, priority));
 
+            } else {
+              mark = true;
+              meaning = meaning.append(converter.charAt(meaningPos));
           }
-
-
         }
-        System.out.println(numbers.toString());
-        System.out.println(sign.toString());
+
+        if (mark) {
+            train.add(new Wagon(meaning.toString(), 0));
+            meaning.delete(0, meaning.length());
+            mark = false;
+        }
+
+        System.out.println(stack.empty());
+        Wagon wagon;
         System.out.println(train);
+
+int i = 1;
+
+        do {
+            i++;
+//            System.out.println(i);
+            if (!train.isEmpty()) {
+                wagon = train.poll();
+                if ((wagon.getPriority() > 0 && stack.empty()) || (wagon.getPriority() == 1)) {
+                    stack.push(wagon);
+                } else if (wagon.getPriority() > 0) {
+                    if (wagon.getPriority() > stack.peek().getPriority() && wagon.getPriority() != 4) {
+                        stack.push(wagon);
+                    } else if ((wagon.getPriority() < stack.peek().getPriority() ||
+                            wagon.getPriority() == stack.peek().getPriority()) && wagon.getPriority() != 4) {
+                        while (!stack.empty()) {
+                            if (wagon.getPriority() > stack.peek().getPriority()){//TODO
+                                stack.push(wagon);
+                                break;
+                            }
+                            polishNotation.add(stack.pop());
+//                            System.out.println(polishNotation.toString()+ "aaa");
+                        }
+                    } else {
+                       while (stack.peek().getPriority() != 1){
+                           polishNotation.add(stack.pop());
+                       }
+                       stack.pop();
+                    }
+                } else polishNotation.add(wagon);
+            } else while (!stack.empty()){
+                polishNotation.add(stack.pop());
+            }
+
+//            System.out.println(stack.empty() + " " +  train.isEmpty());
+//            System.out.println((!(!stack.empty() && train.isEmpty())));
+        } while (!(stack.empty() && train.isEmpty()));
+
+        System.out.println(polishNotation.toString());
+        System.out.println(stack.toString());
+
     }
 }
 
